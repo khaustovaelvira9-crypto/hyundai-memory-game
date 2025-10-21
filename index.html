@@ -6,7 +6,7 @@
 <title>Гра — Знайди пару (Hyundai)</title>
 <style>
   :root{
-    --card-size: 120px;
+    --card-size: 140px;
     --gap: 14px;
     --bg: #f4f6f8;
     --accent: #0f6fff;
@@ -56,7 +56,7 @@
   .card{
     width:100%;
     max-width:var(--card-size);
-    aspect-ratio: 3/4;
+    aspect-ratio: 1/1; /* <-- квадратна форма */
     perspective:1000px;
     cursor:pointer;
     position:relative;
@@ -122,7 +122,7 @@
   .stat{background:#f5f7fb;padding:8px 12px;border-radius:8px;font-weight:600}
   @media (max-width:700px){
     .grid{grid-template-columns:repeat(2,1fr);}
-    :root{--card-size:140px}
+    :root{--card-size:130px}
   }
 </style>
 </head>
@@ -158,16 +158,8 @@
 </div>
 
 <script>
-/*
-  Інструкція:
-  - Помістіть цей файл разом із зображеннями в одну папку.
-  - Файли зображень за замовчуванням: 'santafe.jpg', 'staria.jpg', 'tucson.jpg', 'venue.jpg'
-  - Якщо у вас інші шляхи/URL — замініть відповідні рядки в масиві images.
-*/
-
 (function(){
-  // Налаштування
-  const maxAttemptsBeforeFail = 24; // якщо перевищите — покаже "Спробуйте знову"
+  const maxAttemptsBeforeFail = 24;
   const images = [
     {id: 'santafe', src: 'santafe.jpg', label: 'Santa Fe'},
     {id: 'staria', src: 'staria.jpg', label: 'Staria'},
@@ -175,7 +167,6 @@
     {id: 'venue', src: 'venue.jpg', label: 'Venue'}
   ];
 
-  // Подвійний масив -> 8 карт
   let deck = images.concat(images).map((it, idx)=>({
     uid: idx+1,
     id: it.id,
@@ -183,125 +174,92 @@
     label: it.label
   }));
 
-  // Перемішати (Fisher–Yates)
+  let firstCard=null, secondCard=null, lock=false;
+  let attempts=0, pairsFound=0;
+  let startTime=null, timerInterval=null;
+  let gamesWon = parseInt(localStorage.getItem('gamesWon') || '0'); // ✅ лічильник виграних ігор
+
+  const board=document.getElementById('gameBoard');
+  const attemptsEl=document.getElementById('attempts');
+  const pairsFoundEl=document.getElementById('pairsFound');
+  const restartBtn=document.getElementById('restart');
+  const overlay=document.getElementById('overlay');
+  const modalTitle=document.getElementById('modalTitle');
+  const modalMessage=document.getElementById('modalMessage');
+  const finalAttempts=document.getElementById('finalAttempts');
+  const finalTime=document.getElementById('finalTime');
+  const playAgain=document.getElementById('playAgain');
+  const closeModal=document.getElementById('closeModal');
+
   function shuffle(a){
     for(let i=a.length-1;i>0;i--){
-      const j = Math.floor(Math.random()*(i+1));
-      [a[i],a[j]] = [a[j],a[i]];
+      const j=Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
     }
     return a;
   }
 
-  // DOM refs
-  const board = document.getElementById('gameBoard');
-  const attemptsEl = document.getElementById('attempts');
-  const pairsFoundEl = document.getElementById('pairsFound');
-  const restartBtn = document.getElementById('restart');
-  const overlay = document.getElementById('overlay');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalMessage = document.getElementById('modalMessage');
-  const finalAttempts = document.getElementById('finalAttempts');
-  const finalTime = document.getElementById('finalTime');
-  const playAgain = document.getElementById('playAgain');
-  const closeModal = document.getElementById('closeModal');
-
-  let firstCard = null;
-  let secondCard = null;
-  let lock = false;
-  let attempts = 0;
-  let pairsFound = 0;
-  let startTime = null;
-  let timerInterval = null;
-
-  function startTimer(){
-    startTime = Date.now();
-    if(timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(()=>{}, 1000);
-  }
-  function getElapsedSeconds(){ return Math.round((Date.now()-startTime)/1000); }
-
   function buildBoard(){
-    board.innerHTML = '';
+    board.innerHTML='';
     shuffle(deck);
     deck.forEach(cardData=>{
-      const card = document.createElement('button');
-      card.className = 'card';
-      card.setAttribute('data-uid', cardData.uid);
-      card.setAttribute('data-id', cardData.id);
-      card.setAttribute('aria-label', 'Картка: ' + cardData.label);
-      card.innerHTML = `
-        <div class="inner" tabindex="-1">
+      const card=document.createElement('button');
+      card.className='card';
+      card.setAttribute('data-id',cardData.id);
+      card.innerHTML=`
+        <div class="inner">
           <div class="face front"><img src="${cardData.src}" alt="${cardData.label}"></div>
           <div class="face back">?</div>
-        </div>
-      `;
-      card.addEventListener('click', onCardClick);
+        </div>`;
+      card.addEventListener('click',onCardClick);
       board.appendChild(card);
     });
-
-    // оновлення UI
-    attempts = 0; pairsFound = 0;
-    attemptsEl.textContent = attempts;
-    pairsFoundEl.textContent = pairsFound;
-    startTimer();
+    attempts=0; pairsFound=0;
+    attemptsEl.textContent=attempts;
+    pairsFoundEl.textContent=pairsFound;
+    startTime=Date.now();
   }
 
+  function flip(card){card.classList.add('flipped');}
+  function unflip(card){card.classList.remove('flipped');}
+
   function onCardClick(e){
-    if (lock) return;
-    const card = e.currentTarget;
-    if (card.classList.contains('flipped')) return;
-
+    if(lock) return;
+    const card=e.currentTarget;
+    if(card.classList.contains('flipped')) return;
     flip(card);
-
-    if (!firstCard){
-      firstCard = card;
-      return;
-    }
-    if (firstCard === card) return;
-    secondCard = card;
-    lock = true;
-
+    if(!firstCard){firstCard=card;return;}
+    if(firstCard===card) return;
+    secondCard=card;
+    lock=true;
     attempts++;
-    attemptsEl.textContent = attempts;
-
-    const id1 = firstCard.getAttribute('data-id');
-    const id2 = secondCard.getAttribute('data-id');
-
-    if (id1 === id2){
-      // знайдено пару
+    attemptsEl.textContent=attempts;
+    const id1=firstCard.dataset.id, id2=secondCard.dataset.id;
+    if(id1===id2){
       setTimeout(()=>{
         firstCard.classList.add('disabled');
         secondCard.classList.add('disabled');
-        firstCard = null; secondCard = null; lock = false;
+        firstCard=null;secondCard=null;lock=false;
         pairsFound++;
-        pairsFoundEl.textContent = pairsFound;
+        pairsFoundEl.textContent=pairsFound;
         checkWinOrFail();
-      }, 600);
-    } else {
-      // невірна пара
+      },600);
+    }else{
       setTimeout(()=>{
-        unflip(firstCard);
-        unflip(secondCard);
-        firstCard = null; secondCard = null; lock = false;
+        unflip(firstCard);unflip(secondCard);
+        firstCard=null;secondCard=null;lock=false;
         checkWinOrFail();
-      }, 900);
+      },900);
     }
   }
 
-  function flip(card){
-    card.classList.add('flipped');
-  }
-  function unflip(card){
-    card.classList.remove('flipped');
-  }
+  function getElapsedSeconds(){return Math.round((Date.now()-startTime)/1000);}
 
   function checkWinOrFail(){
-    if (pairsFound === images.length){
-      // виграш
+    if(pairsFound===images.length){
       clearInterval(timerInterval);
       showOverlay(true);
-    } else if (attempts >= maxAttemptsBeforeFail){
-      // перевищено число спроб
+    } else if(attempts>=maxAttemptsBeforeFail){
       clearInterval(timerInterval);
       showOverlay(false);
     }
@@ -309,58 +267,37 @@
 
   function showOverlay(win){
     overlay.classList.add('show');
-    overlay.setAttribute('aria-hidden','false');
-    if (win){
-      modalTitle.textContent = 'Ви виграли!';
-      modalMessage.textContent = 'Відмінно — ви знайшли всі пари.';
-    } else {
-      modalTitle.textContent = 'Спробуйте знову';
-      modalMessage.textContent = 'Ви вичерпали дозволену кількість спроб.';
+    if(win){
+      gamesWon++;
+      localStorage.setItem('gamesWon',gamesWon);
+      modalTitle.textContent='Ви виграли!';
+      if(gamesWon % 30 === 0){
+        modalMessage.textContent='🎉 Вітаємо! Отримайте приз у адміністратора!';
+      } else {
+        modalMessage.textContent='Відмінно — ви знайшли всі пари.';
+      }
+    }else{
+      modalTitle.textContent='Спробуйте знову';
+      modalMessage.textContent='Ви вичерпали дозволену кількість спроб.';
     }
-    finalAttempts.textContent = attempts;
-    finalTime.textContent = getElapsedSeconds() + 's';
+    finalAttempts.textContent=attempts;
+    finalTime.textContent=getElapsedSeconds()+'s';
   }
 
-  function hideOverlay(){
-    overlay.classList.remove('show');
-    overlay.setAttribute('aria-hidden','true');
-  }
+  function hideOverlay(){overlay.classList.remove('show');}
 
-  // Перезапуск гри
   function restart(){
-    // зняти все
-    firstCard = null; secondCard = null; lock = false;
-    deck = images.concat(images).map((it, idx)=>({
-      uid: idx+1,
-      id: it.id,
-      src: it.src,
-      label: it.label
-    }));
-    buildBoard();
-    hideOverlay();
+    firstCard=null;secondCard=null;lock=false;
+    deck=images.concat(images).map((it,idx)=>({uid:idx+1,id:it.id,src:it.src,label:it.label}));
+    buildBoard();hideOverlay();
   }
 
-  // Кнопки
-  restartBtn.addEventListener('click', restart);
-  playAgain.addEventListener('click', restart);
-  closeModal.addEventListener('click', hideOverlay);
-  overlay.addEventListener('click', (e)=>{
-    if (e.target === overlay) hideOverlay();
-  });
+  restartBtn.addEventListener('click',restart);
+  playAgain.addEventListener('click',restart);
+  closeModal.addEventListener('click',hideOverlay);
+  overlay.addEventListener('click',(e)=>{if(e.target===overlay)hideOverlay();});
 
-  // Ініціалізація
   buildBoard();
-
-  // Доступність: клавіатурна навігація — allow flipping карточки Enter/Space
-  board.addEventListener('keydown', (e)=>{
-    const key = e.key;
-    if (key === 'Enter' || key === ' '){
-      const card = e.target.closest('.card');
-      if (card) card.click();
-      e.preventDefault();
-    }
-  });
-
 })();
 </script>
 </body>
