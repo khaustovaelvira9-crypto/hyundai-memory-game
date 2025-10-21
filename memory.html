@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Гра — Знайди пару (Hyundai)</title>
+<style>
+  :root{
+    --card-size: 120px;
+    --gap: 14px;
+    --bg: #f4f6f8;
+    --accent: #0f6fff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    background:linear-gradient(180deg,#ffffff 0%,var(--bg) 100%);
+    color:#111;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  .container{
+    width:100%;
+    max-width:920px;
+    margin:0 auto;
+  }
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:18px;
+  }
+  header h1{font-size:20px;margin:0}
+  .controls{display:flex;gap:8px;align-items:center}
+  .btn{
+    background:#111;color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer;
+    font-weight:600;
+  }
+  .btn.ghost{background:transparent;color:#111;border:1px solid #ddd}
+  .meta{font-size:14px;color:#444}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:var(--gap);
+    justify-items:center;
+  }
+
+  .card{
+    width:100%;
+    max-width:var(--card-size);
+    aspect-ratio: 3/4;
+    perspective:1000px;
+    cursor:pointer;
+    position:relative;
+  }
+
+  .inner{
+    position:relative;
+    width:100%;
+    height:100%;
+    transform-style:preserve-3d;
+    transition: transform 400ms cubic-bezier(.2,.9,.3,1);
+    border-radius:10px;
+    box-shadow: 0 6px 18px rgba(15,15,15,0.12);
+  }
+  .card.flipped .inner{ transform: rotateY(180deg); }
+
+  .face{
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:10px; overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .back{
+    background:linear-gradient(180deg,#2b2b2b,#111);
+    color:#fff;
+    font-weight:700;
+    font-size:18px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .front{
+    transform:rotateY(180deg);
+    background:#eee;
+  }
+  .front img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+
+  .disabled { pointer-events:none; opacity:0.6; }
+
+  /* Overlay screens */
+  .overlay{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.45);
+    z-index:999;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 200ms;
+  }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+
+  .modal{
+    background:#fff;padding:28px;border-radius:12px;min-width:280px;text-align:center;
+    box-shadow:0 20px 50px rgba(0,0,0,0.25);
+  }
+  .modal h2{margin:0 0 8px;font-size:22px}
+  .modal p{margin:0 0 16px;color:#444}
+  .stats{display:flex;gap:12px;justify-content:center;margin-bottom:12px}
+  .stat{background:#f5f7fb;padding:8px 12px;border-radius:8px;font-weight:600}
+  @media (max-width:700px){
+    .grid{grid-template-columns:repeat(2,1fr);}
+    :root{--card-size:140px}
+  }
+</style>
+</head>
+<body>
+<div class="container" role="application" aria-label="Гра Знайди пару">
+  <header>
+    <h1>Знайди пару — Hyundai</h1>
+    <div class="controls">
+      <div class="meta">Спроби: <span id="attempts">0</span> • Пара: <span id="pairsFound">0</span>/4</div>
+      <button id="restart" class="btn ghost" title="Почати заново">Почати заново</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="grid" id="gameBoard" aria-live="polite"></section>
+  </main>
+</div>
+
+<!-- Overlay: win / try again -->
+<div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal" id="modalContent">
+    <h2 id="modalTitle">Ви виграли!</h2>
+    <p id="modalMessage">Відмінно — ви знайшли всі пари.</p>
+    <div class="stats">
+      <div class="stat">Спроби: <span id="finalAttempts">0</span></div>
+      <div class="stat">Час: <span id="finalTime">0s</span></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button id="playAgain" class="btn">Грати знову</button>
+      <button id="closeModal" class="btn ghost">Закрити</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  Інструкція:
+  - Помістіть цей файл разом із зображеннями в одну папку.
+  - Файли зображень за замовчуванням: 'santafe.jpg', 'staria.jpg', 'tucson.jpg', 'venue.jpg'
+  - Якщо у вас інші шляхи/URL — замініть відповідні рядки в масиві images.
+*/
+
+(function(){
+  // Налаштування
+  const maxAttemptsBeforeFail = 24; // якщо перевищите — покаже "Спробуйте знову"
+  const images = [
+    {id: 'santafe', src: 'santafe.jpg', label: 'Santa Fe'},
+    {id: 'staria', src: 'staria.jpg', label: 'Staria'},
+    {id: 'tucson', src: 'tucson.jpg', label: 'Tucson'},
+    {id: 'venue', src: 'venue.jpg', label: 'Venue'}
+  ];
+
+  // Подвійний масив -> 8 карт
+  let deck = images.concat(images).map((it, idx)=>({
+    uid: idx+1,
+    id: it.id,
+    src: it.src,
+    label: it.label
+  }));
+
+  // Перемішати (Fisher–Yates)
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  // DOM refs
+  const board = document.getElementById('gameBoard');
+  const attemptsEl = document.getElementById('attempts');
+  const pairsFoundEl = document.getElementById('pairsFound');
+  const restartBtn = document.getElementById('restart');
+  const overlay = document.getElementById('overlay');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMessage = document.getElementById('modalMessage');
+  const finalAttempts = document.getElementById('finalAttempts');
+  const finalTime = document.getElementById('finalTime');
+  const playAgain = document.getElementById('playAgain');
+  const closeModal = document.getElementById('closeModal');
+
+  let firstCard = null;
+  let secondCard = null;
+  let lock = false;
+  let attempts = 0;
+  let pairsFound = 0;
+  let startTime = null;
+  let timerInterval = null;
+
+  function startTimer(){
+    startTime = Date.now();
+    if(timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(()=>{}, 1000);
+  }
+  function getElapsedSeconds(){ return Math.round((Date.now()-startTime)/1000); }
+
+  function buildBoard(){
+    board.innerHTML = '';
+    shuffle(deck);
+    deck.forEach(cardData=>{
+      const card = document.createElement('button');
+      card.className = 'card';
+      card.setAttribute('data-uid', cardData.uid);
+      card.setAttribute('data-id', cardData.id);
+      card.setAttribute('aria-label', 'Картка: ' + cardData.label);
+      card.innerHTML = `
+        <div class="inner" tabindex="-1">
+          <div class="face front"><img src="${cardData.src}" alt="${cardData.label}"></div>
+          <div class="face back">?</div>
+        </div>
+      `;
+      card.addEventListener('click', onCardClick);
+      board.appendChild(card);
+    });
+
+    // оновлення UI
+    attempts = 0; pairsFound = 0;
+    attemptsEl.textContent = attempts;
+    pairsFoundEl.textContent = pairsFound;
+    startTimer();
+  }
+
+  function onCardClick(e){
+    if (lock) return;
+    const card = e.currentTarget;
+    if (card.classList.contains('flipped')) return;
+
+    flip(card);
+
+    if (!firstCard){
+      firstCard = card;
+      return;
+    }
+    if (firstCard === card) return;
+    secondCard = card;
+    lock = true;
+
+    attempts++;
+    attemptsEl.textContent = attempts;
+
+    const id1 = firstCard.getAttribute('data-id');
+    const id2 = secondCard.getAttribute('data-id');
+
+    if (id1 === id2){
+      // знайдено пару
+      setTimeout(()=>{
+        firstCard.classList.add('disabled');
+        secondCard.classList.add('disabled');
+        firstCard = null; secondCard = null; lock = false;
+        pairsFound++;
+        pairsFoundEl.textContent = pairsFound;
+        checkWinOrFail();
+      }, 600);
+    } else {
+      // невірна пара
+      setTimeout(()=>{
+        unflip(firstCard);
+        unflip(secondCard);
+        firstCard = null; secondCard = null; lock = false;
+        checkWinOrFail();
+      }, 900);
+    }
+  }
+
+  function flip(card){
+    card.classList.add('flipped');
+  }
+  function unflip(card){
+    card.classList.remove('flipped');
+  }
+
+  function checkWinOrFail(){
+    if (pairsFound === images.length){
+      // виграш
+      clearInterval(timerInterval);
+      showOverlay(true);
+    } else if (attempts >= maxAttemptsBeforeFail){
+      // перевищено число спроб
+      clearInterval(timerInterval);
+      showOverlay(false);
+    }
+  }
+
+  function showOverlay(win){
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden','false');
+    if (win){
+      modalTitle.textContent = 'Ви виграли!';
+      modalMessage.textContent = 'Відмінно — ви знайшли всі пари.';
+    } else {
+      modalTitle.textContent = 'Спробуйте знову';
+      modalMessage.textContent = 'Ви вичерпали дозволену кількість спроб.';
+    }
+    finalAttempts.textContent = attempts;
+    finalTime.textContent = getElapsedSeconds() + 's';
+  }
+
+  function hideOverlay(){
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden','true');
+  }
+
+  // Перезапуск гри
+  function restart(){
+    // зняти все
+    firstCard = null; secondCard = null; lock = false;
+    deck = images.concat(images).map((it, idx)=>({
+      uid: idx+1,
+      id: it.id,
+      src: it.src,
+      label: it.label
+    }));
+    buildBoard();
+    hideOverlay();
+  }
+
+  // Кнопки
+  restartBtn.addEventListener('click', restart);
+  playAgain.addEventListener('click', restart);
+  closeModal.addEventListener('click', hideOverlay);
+  overlay.addEventListener('click', (e)=>{
+    if (e.target === overlay) hideOverlay();
+  });
+
+  // Ініціалізація
+  buildBoard();
+
+  // Доступність: клавіатурна навігація — allow flipping карточки Enter/Space
+  board.addEventListener('keydown', (e)=>{
+    const key = e.key;
+    if (key === 'Enter' || key === ' '){
+      const card = e.target.closest('.card');
+      if (card) card.click();
+      e.preventDefault();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
