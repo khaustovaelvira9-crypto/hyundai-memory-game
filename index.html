@@ -279,7 +279,7 @@ header h1 {
       gamesWon++;
       localStorage.setItem('gamesWon', gamesWon);
       title.textContent = "🎉 Ви виграли!";
-      if (gamesWon % 30 === 0) {
+      if (gamesWon % 5 === 0) {
         body.textContent = "🎁 Вітаємо! Отримайте подарунок у адміністратора!";
       } else {
         body.textContent = "Вітаємо! Ви знайшли всі пари вчасно!";
@@ -309,3 +309,4 @@ header h1 {
 </script>
 </body>
 </html>
+
