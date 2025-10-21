@@ -3,301 +3,308 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Гра — Знайди пару (Hyundai)</title>
+<title>Знайди пару — Hyundai</title>
 <style>
-  :root{
-    --card-size: 140px;
-    --gap: 14px;
-    --bg: #f4f6f8;
-    --accent: #0f6fff;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
-    background:linear-gradient(180deg,#ffffff 0%,var(--bg) 100%);
-    color:#111;
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:24px;
-  }
-
-  .container{
-    width:100%;
-    max-width:920px;
-    margin:0 auto;
-  }
-
-  header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:18px;
-  }
-  header h1{font-size:20px;margin:0}
-  .controls{display:flex;gap:8px;align-items:center}
-  .btn{
-    background:#111;color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer;
-    font-weight:600;
-  }
-  .btn.ghost{background:transparent;color:#111;border:1px solid #ddd}
-  .meta{font-size:14px;color:#444}
-
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:var(--gap);
-    justify-items:center;
-  }
-
-  .card{
-    width:100%;
-    max-width:var(--card-size);
-    aspect-ratio: 1/1; /* <-- квадратна форма */
-    perspective:1000px;
-    cursor:pointer;
-    position:relative;
-  }
-
-  .inner{
-    position:relative;
-    width:100%;
-    height:100%;
-    transform-style:preserve-3d;
-    transition: transform 400ms cubic-bezier(.2,.9,.3,1);
-    border-radius:10px;
-    box-shadow: 0 6px 18px rgba(15,15,15,0.12);
-  }
-  .card.flipped .inner{ transform: rotateY(180deg); }
-
-  .face{
-    position:absolute; inset:0; backface-visibility:hidden; border-radius:10px; overflow:hidden;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .back{
-    background:linear-gradient(180deg,#2b2b2b,#111);
-    color:#fff;
-    font-weight:700;
-    font-size:18px;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .front{
-    transform:rotateY(180deg);
-    background:#eee;
-  }
-  .front img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
-  }
-
-  .disabled { pointer-events:none; opacity:0.6; }
-
-  /* Overlay screens */
-  .overlay{
-    position:fixed;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:rgba(0,0,0,0.45);
-    z-index:999;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity 200ms;
-  }
-  .overlay.show{ opacity:1; pointer-events:auto; }
-
-  .modal{
-    background:#fff;padding:28px;border-radius:12px;min-width:280px;text-align:center;
-    box-shadow:0 20px 50px rgba(0,0,0,0.25);
-  }
-  .modal h2{margin:0 0 8px;font-size:22px}
-  .modal p{margin:0 0 16px;color:#444}
-  .stats{display:flex;gap:12px;justify-content:center;margin-bottom:12px}
-  .stat{background:#f5f7fb;padding:8px 12px;border-radius:8px;font-weight:600}
-  @media (max-width:700px){
-    .grid{grid-template-columns:repeat(2,1fr);}
-    :root{--card-size:130px}
-  }
+:root {
+  --blue-main: #0066cc;
+  --blue-dark: #003366;
+  --blue-light: #e6f0ff;
+  --card-size: 140px;
+  --gap: 14px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background: linear-gradient(180deg, var(--blue-light), white);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue-dark);
+}
+.container {
+  width: 100%;
+  max-width: 900px;
+  padding: 20px;
+}
+header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+header h1 {
+  font-size: 22px;
+  color: var(--blue-dark);
+  margin: 0;
+  text-align: center;
+}
+.controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.stat {
+  font-weight: 600;
+  background: var(--blue-light);
+  color: var(--blue-dark);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.btn {
+  background: var(--blue-main);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn:hover {
+  background: var(--blue-dark);
+}
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #cce0ff;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.progress-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--blue-main);
+  transition: width 1s linear;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+  justify-items: center;
+}
+.card {
+  width: 100%;
+  max-width: var(--card-size);
+  aspect-ratio: 1 / 1;
+  perspective: 1000px;
+  cursor: pointer;
+}
+.inner {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease;
+  border-radius: 10px;
+}
+.card.flipped .inner {
+  transform: rotateY(180deg);
+}
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+.front {
+  transform: rotateY(180deg);
+}
+.front img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.back {
+  background: var(--blue-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 22px;
+  font-weight: bold;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 50, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--blue-dark);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+.modal h2 {
+  margin-top: 0;
+  color: var(--blue-main);
+}
+@media (max-width: 700px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  :root { --card-size: 120px; }
+}
 </style>
 </head>
 <body>
-<div class="container" role="application" aria-label="Гра Знайди пару">
+<div class="container">
   <header>
     <h1>Знайди пару — Hyundai</h1>
     <div class="controls">
-      <div class="meta">Спроби: <span id="attempts">0</span> • Пара: <span id="pairsFound">0</span>/4</div>
-      <button id="restart" class="btn ghost" title="Почати заново">Почати заново</button>
+      <div class="stat">⏱ Час: <span id="time">15</span> с</div>
+      <div class="stat">🧩 Пари: <span id="pairs">0</span> / 4</div>
+      <button id="restart" class="btn">🔄 Почати знову</button>
     </div>
+    <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
   </header>
-
-  <main>
-    <section class="grid" id="gameBoard" aria-live="polite"></section>
-  </main>
+  <div id="board" class="grid"></div>
 </div>
 
-<!-- Overlay: win / try again -->
-<div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="modal" id="modalContent">
-    <h2 id="modalTitle">Ви виграли!</h2>
-    <p id="modalMessage">Відмінно — ви знайшли всі пари.</p>
-    <div class="stats">
-      <div class="stat">Спроби: <span id="finalAttempts">0</span></div>
-      <div class="stat">Час: <span id="finalTime">0s</span></div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:center">
-      <button id="playAgain" class="btn">Грати знову</button>
-      <button id="closeModal" class="btn ghost">Закрити</button>
-    </div>
+<div id="overlay" class="overlay">
+  <div class="modal">
+    <h2 id="message-title"></h2>
+    <p id="message-body"></p>
+    <button id="play-again" class="btn">Грати ще раз</button>
   </div>
 </div>
 
 <script>
-(function(){
-  const maxAttemptsBeforeFail = 24;
-  const images = [
-    {id: 'santafe', src: 'santafe.jpg', label: 'Santa Fe'},
-    {id: 'staria', src: 'staria.jpg', label: 'Staria'},
-    {id: 'tucson', src: 'tucson.jpg', label: 'Tucson'},
-    {id: 'venue', src: 'venue.jpg', label: 'Venue'}
+(function() {
+  const IMAGES = [
+    { id: 'santafe', src: 'santafe.jpg' },
+    { id: 'staria', src: 'staria.jpg' },
+    { id: 'tucson', src: 'tucson.jpg' },
+    { id: 'venue', src: 'venue.jpg' }
   ];
 
-  let deck = images.concat(images).map((it, idx)=>({
-    uid: idx+1,
-    id: it.id,
-    src: it.src,
-    label: it.label
-  }));
+  let deck = [];
+  let first = null, second = null, lock = false;
+  let pairs = 0, timeLeft = 15, timer;
+  let gamesWon = parseInt(localStorage.getItem('gamesWon') || '0');
+  
+  const board = document.getElementById('board');
+  const pairsEl = document.getElementById('pairs');
+  const timeEl = document.getElementById('time');
+  const overlay = document.getElementById('overlay');
+  const title = document.getElementById('message-title');
+  const body = document.getElementById('message-body');
+  const playAgain = document.getElementById('play-again');
+  const restart = document.getElementById('restart');
+  const progressFill = document.getElementById('progress-fill');
 
-  let firstCard=null, secondCard=null, lock=false;
-  let attempts=0, pairsFound=0;
-  let startTime=null, timerInterval=null;
-  let gamesWon = parseInt(localStorage.getItem('gamesWon') || '0'); // ✅ лічильник виграних ігор
-
-  const board=document.getElementById('gameBoard');
-  const attemptsEl=document.getElementById('attempts');
-  const pairsFoundEl=document.getElementById('pairsFound');
-  const restartBtn=document.getElementById('restart');
-  const overlay=document.getElementById('overlay');
-  const modalTitle=document.getElementById('modalTitle');
-  const modalMessage=document.getElementById('modalMessage');
-  const finalAttempts=document.getElementById('finalAttempts');
-  const finalTime=document.getElementById('finalTime');
-  const playAgain=document.getElementById('playAgain');
-  const closeModal=document.getElementById('closeModal');
-
-  function shuffle(a){
-    for(let i=a.length-1;i>0;i--){
-      const j=Math.floor(Math.random()*(i+1));
-      [a[i],a[j]]=[a[j],a[i]];
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return a;
+    return arr;
   }
 
-  function buildBoard(){
-    board.innerHTML='';
-    shuffle(deck);
-    deck.forEach(cardData=>{
-      const card=document.createElement('button');
-      card.className='card';
-      card.setAttribute('data-id',cardData.id);
-      card.innerHTML=`
+  function buildBoard() {
+    board.innerHTML = '';
+    deck = shuffle(IMAGES.concat(IMAGES).map((img, i) => ({...img, uid: i})));
+    deck.forEach(card => {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `
         <div class="inner">
-          <div class="face front"><img src="${cardData.src}" alt="${cardData.label}"></div>
+          <div class="face front"><img src="${card.src}" alt=""></div>
           <div class="face back">?</div>
         </div>`;
-      card.addEventListener('click',onCardClick);
-      board.appendChild(card);
+      el.dataset.id = card.id;
+      el.addEventListener('click', () => flipCard(el));
+      board.appendChild(el);
     });
-    attempts=0; pairsFound=0;
-    attemptsEl.textContent=attempts;
-    pairsFoundEl.textContent=pairsFound;
-    startTime=Date.now();
   }
 
-  function flip(card){card.classList.add('flipped');}
-  function unflip(card){card.classList.remove('flipped');}
-
-  function onCardClick(e){
-    if(lock) return;
-    const card=e.currentTarget;
-    if(card.classList.contains('flipped')) return;
-    flip(card);
-    if(!firstCard){firstCard=card;return;}
-    if(firstCard===card) return;
-    secondCard=card;
-    lock=true;
-    attempts++;
-    attemptsEl.textContent=attempts;
-    const id1=firstCard.dataset.id, id2=secondCard.dataset.id;
-    if(id1===id2){
-      setTimeout(()=>{
-        firstCard.classList.add('disabled');
-        secondCard.classList.add('disabled');
-        firstCard=null;secondCard=null;lock=false;
-        pairsFound++;
-        pairsFoundEl.textContent=pairsFound;
-        checkWinOrFail();
-      },600);
-    }else{
-      setTimeout(()=>{
-        unflip(firstCard);unflip(secondCard);
-        firstCard=null;secondCard=null;lock=false;
-        checkWinOrFail();
-      },900);
+  function flipCard(card) {
+    if (lock || card.classList.contains('flipped')) return;
+    card.classList.add('flipped');
+    if (!first) {
+      first = card;
+      return;
+    }
+    second = card;
+    lock = true;
+    if (first.dataset.id === second.dataset.id) {
+      pairs++;
+      pairsEl.textContent = pairs;
+      first = second = null;
+      lock = false;
+      if (pairs === 4) endGame(true);
+    } else {
+      setTimeout(() => {
+        first.classList.remove('flipped');
+        second.classList.remove('flipped');
+        first = second = null;
+        lock = false;
+      }, 700);
     }
   }
 
-  function getElapsedSeconds(){return Math.round((Date.now()-startTime)/1000);}
-
-  function checkWinOrFail(){
-    if(pairsFound===images.length){
-      clearInterval(timerInterval);
-      showOverlay(true);
-    } else if(attempts>=maxAttemptsBeforeFail){
-      clearInterval(timerInterval);
-      showOverlay(false);
-    }
-  }
-
-  function showOverlay(win){
-    overlay.classList.add('show');
-    if(win){
-      gamesWon++;
-      localStorage.setItem('gamesWon',gamesWon);
-      modalTitle.textContent='Ви виграли!';
-      if(gamesWon % 30 === 0){
-        modalMessage.textContent='🎉 Вітаємо! Отримайте приз у адміністратора!';
-      } else {
-        modalMessage.textContent='Відмінно — ви знайшли всі пари.';
+  function startTimer() {
+    clearInterval(timer);
+    timeLeft = 15;
+    timeEl.textContent = timeLeft;
+    progressFill.style.width = "100%";
+    timer = setInterval(() => {
+      timeLeft--;
+      timeEl.textContent = timeLeft;
+      progressFill.style.width = (timeLeft / 15 * 100) + "%";
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        endGame(false);
       }
-    }else{
-      modalTitle.textContent='Спробуйте знову';
-      modalMessage.textContent='Ви вичерпали дозволену кількість спроб.';
+    }, 1000);
+  }
+
+  function endGame(win) {
+    clearInterval(timer);
+    overlay.classList.add('show');
+    if (win) {
+      gamesWon++;
+      localStorage.setItem('gamesWon', gamesWon);
+      title.textContent = "🎉 Ви виграли!";
+      if (gamesWon % 30 === 0) {
+        body.textContent = "🎁 Вітаємо! Отримайте подарунок у адміністратора!";
+      } else {
+        body.textContent = "Вітаємо! Ви знайшли всі пари вчасно!";
+      }
+    } else {
+      title.textContent = "⏰ Час вийшов!";
+      body.textContent = "Спробуйте ще раз!";
     }
-    finalAttempts.textContent=attempts;
-    finalTime.textContent=getElapsedSeconds()+'s';
   }
 
-  function hideOverlay(){overlay.classList.remove('show');}
-
-  function restart(){
-    firstCard=null;secondCard=null;lock=false;
-    deck=images.concat(images).map((it,idx)=>({uid:idx+1,id:it.id,src:it.src,label:it.label}));
-    buildBoard();hideOverlay();
+  function restartGame() {
+    pairs = 0;
+    pairsEl.textContent = pairs;
+    first = second = null;
+    lock = false;
+    overlay.classList.remove('show');
+    buildBoard();
+    startTimer();
   }
 
-  restartBtn.addEventListener('click',restart);
-  playAgain.addEventListener('click',restart);
-  closeModal.addEventListener('click',hideOverlay);
-  overlay.addEventListener('click',(e)=>{if(e.target===overlay)hideOverlay();});
+  restart.addEventListener('click', restartGame);
+  playAgain.addEventListener('click', restartGame);
 
   buildBoard();
+  startTimer();
 })();
 </script>
 </body>
